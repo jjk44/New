@@ -2,10 +2,15 @@ var curBattleBtn = null;
 var curTurn = 0;
 var timer = -1;
 var didFlee = false;
-var newMonster = true;
+var newMonster = false;
 
 var curHP = 0;
 var curMaxHP = 0;
+var curToHP = 0;
+
+var finalMessage = 0;
+var finalMessageA = 0;
+var finalMessageY = 0;
 
 var won = false;
 
@@ -48,6 +53,15 @@ function Battle() {
 		context.fillStyle = "#223333";
 		context.fillRect(0, 640-border, width, border);
 		
+		
+		
+		
+		if(this.monster.deathA < 1)
+		{
+			context.fillStyle = "rgba(255,255,255,"+ (1-this.monster.deathA) +")";
+			context.fillRect(0, 0, width, height);	
+		}
+		
 				this.monster.render();
 
 		
@@ -56,18 +70,52 @@ function Battle() {
 		shIcon.render();
 		
 		
+		rndX = 0;
+		rndY = 0;
+		
+		if(curTurn == .6)
+		{
+			dir = Math.random()*360;
+			rad = Math.random()*20;
+			rndX = rad*Math.cos(dir/180*3.14159);
+			rndY = rad*Math.sin(dir/180*3.14159);
+		}
+		
+		rndX *= .25;
+		rndY *= .25;
+		
+		
 		
 		context.fillStyle = "#777777";
-		context.fillRect(50, 50, 320, 60);
+		context.fillRect(50+rndX, 40+rndY, 320, 60);
 		context.fillStyle = "#FFFFFF";
-		context.fillRect(50, 50, 320*(curHP/curMaxHP), 60);
+		context.fillRect(50+rndX, 40+rndY, 320*(curHP/curMaxHP), 60);
+		
+		context.fillStyle = "#444444";
+		context.font = "50px Tahoma";
+		context.fillText("Me: " + Math.round(curHP) + "/" + curMaxHP, 50+4, 160+4);
+		
+		context.fillStyle = "#FFFFFF";
+		context.fillText("Me: " + Math.round(curHP) + "/" + curMaxHP, 50, 160);
 		
 		
 		
 		context.fillStyle = "rgba(0,0,0,"+ percBattle +")";
-	    context.fillRect(0, 0, width, height);
+	    context.fillRect(0, 0, width, height);		
+	    
+	    context.font = "60px Tahoma";
+		context.fillStyle = "rgba(255,255,255,"+ finalMessageA +")";
+	    context.fillText(finalMessage, 300, 200-60*finalMessageY);
 	};
 	Battle.prototype.update = function() {
+		if(newMonster)
+		{
+			delete this.monster;
+			this.monster = new Monster();
+			newMonster = false;
+		}
+		
+		
 		if(!didFlee && !won)
 		{
 			percBattle += (0 - percBattle)/10;
@@ -75,9 +123,21 @@ function Battle() {
 				percBattle = 0;
 		}
 		else
-		{
-			percBattle += (1 - percBattle)/10;
-			if(Math.abs(1 - percBattle) < .05)
+		{		
+			if(percBattle < .95)
+			{
+				finalMessageA += (1 - finalMessageA)/20;
+				finalMessageY += (1 - finalMessageY)/40;
+			}
+			else
+			{
+				finalMessageA += (0 - finalMessageA)/10;
+				if(finalMessageA < .05)
+					finalMessageA = 0;
+			}
+			
+			percBattle += (1 - percBattle)/40;
+			if(Math.abs(1 - percBattle) < .01)
 			{
 				curTurn = 0;
 				curBattleBtn = null;
@@ -91,6 +151,9 @@ function Battle() {
 				didFlee = false;
 				percBattle = 1;
 				setCookie("room", "0", 5);
+				
+				finalMessageA = 0;
+				finalMessageY = 0;
 			}
 		}
 		
@@ -134,16 +197,32 @@ function Battle() {
 					dmg = calcDamage(this.monster, 1);
 					
 					if(aType == 0)
-						dmg *= 3;
+						dmg *= 1;
 					
-					curHP -= dmg;
+					curToHP = Math.max(0, curHP - dmg);
 					curTurn = .6;
-					timer = 50;
+					timer = 100;
 				}
 			}
 		}
 		else if(curTurn == .6)
-			curTurn = 0;
+		{
+			if(curHP != curToHP)
+			{
+				curHP += (curToHP - curHP)/5;
+
+				if(Math.abs(curHP-curToHP) < .25)
+				{
+						curHP = curToHP;
+						timer = 50;
+						
+						if(curHP == 0)
+							curTurn = 1.4;
+						else
+							curTurn = 0;
+				}	
+			}
+		}
 		else if(curTurn == 1.2)
 		{
 			this.monster.deathA += (0 - this.monster.deathA)/50;
@@ -151,10 +230,19 @@ function Battle() {
 			if(this.monster.deathA < .001)
 			{
 				this.monster.deathA = 0;
-				newMonster = true;
 				curTurn = 0;
 				won = true;
+				
+				finalMessage = "You have won!";
 			}
+		}
+		else if(curTurn == 1.4)
+		{
+			newMonster = true;
+			curTurn = 0;
+			won = true;
+			
+			finalMessage = "You have died...";
 		}
 		
 		this.monster.update();
@@ -200,7 +288,7 @@ function Battle() {
 		if(this.hopDeg3 > 360)
 			this.hopDeg3 -= 360;
 		
-		if(curTurn == 0)
+		if(curTurn == 0 && this.monster.hp > 0)
 		{	
 			this.hopY1 += (420 - 10*(s1-1) + s1*10*Math.round(Math.abs(Math.sin(this.hopDeg1/180*3.14159))) - this.hopY1)/4;
 			this.hopY2 += (420 - 10*(s2-1) + s2*10*Math.round(Math.abs(Math.sin(15 + this.hopDeg2/180*3.14159))) - this.hopY2)/4;
@@ -241,6 +329,8 @@ function BattleButton(num,x,y,rad) {
 					{
 						didFlee = true;
 						this.isSelected = false;
+						
+						finalMessage = "You have gotten away safely!";
 					}
 					else
 					{
@@ -279,7 +369,7 @@ loadRnd = function() {
 	
 	query.find({
 		success: function(results) {				
-			note = results[1];				
+			note = results[Math.round(15*Math.random())];				
 		
 			setCookie("curName",note.get("Name"),5);
 			setCookie("curHP",note.get("HP"),5);

@@ -140,22 +140,70 @@ function log(msg) {
 		geoPosition.getCurrentPosition(success, error);
 	}
 }
-//Continuously updates currentUser's position
-function watchPosition()
+
+
+
+function addItem(ID)
 {
-	if (geoPosition.init())
+	var currentUser = Parse.User.current();
+	var Items = Parse.Object.extend("Items");
+	var inventory =  currentUser.get("Inventory");
+	inventory[inventory.length] = ID;
+	currentUser.save(null,null);
+}
+function pickupItem()
+{
+	var currentUser = Parse.User.current();
+	var query = null;
+	var Items = Parse.Object.extend("Items");
+	query = new Parse.Query(Items);
+	query.withinKilometers("Location",currentUser.get("Location"),0.010);
+	query.first({success:function(result) {
+	if (result==null)
 	{
-		watchPosition(success,error);
 	}
+	else
+	{
+		addItem(result.id);
+		var b = result.get("Location");
+		var dX = (.0015+Math.random()*.0035)*Math.random()>.5?1:-1;
+		var dY = (.0015+Math.random()*.0035)*Math.random()>.5?1:-1;
+		b.longitude = Math.min(Math.max(-179.999999,b.longitude+dX),179.999999);
+		b.latitude = Math.min(Math.max(-89.999999,b.latitude+dY),89.999999);
+		result.set("Location",b);
+		result.save(null,null);
+	}},
+	error:function(user, error) {}});
+}
+
+
+
+var cTimes = 0;
+//Continuously updates currentUser's position
+function watchPos()
+{
+	//if(geoPosition.init())
+	//{
+	//	watchPosition(success,error);
+	//}
 }
 function success(p)
 {
-var currentUser = Parse.User.current();
-var location = new Parse.GeoPoint({latitude:p.coords.latitude, longitude:p.coords.longitude});
-currentUser.set("Location",location);
-currentUser.save(null,null);
-}
-function error(){}
+	var currentUser = Parse.User.current();
+	var location = new Parse.GeoPoint({latitude:p.coords.latitude, longitude:p.coords.longitude});
+	currentUser.set("Location",location);
+	currentUser.save(null, {
+		success: function(result){
+		},
+		error: function(user, error){
+		}
+	});
+	
+	if(cTimes == 0)
+		pickupItem();
+};
+function error(){
+};
 
 
 
@@ -179,5 +227,13 @@ window.onmousedown = function() {
 
 window.onmouseup = function() {
 	mouseDown = false;
+};
+
+
+window.onkeydown = function(evt) {
+	var charCode = (evt.which) ? evt.which : evt.keyCode;
+  
+    if(charCode == 77)
+   		enemyPresent = true;
 };
 

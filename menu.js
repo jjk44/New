@@ -9,6 +9,8 @@ var bgW = 0;
 var bg2Deg = 0;
 var bg2W = 0;
 
+var genItem = 0;
+
 
 var bgC = [0, 0, 0];
 	var bg0C = [138, 78, 87];
@@ -110,6 +112,9 @@ function Menu() {
 	    
 	    icon.render();
 	    
+	    		this.stt.render();
+
+	    
 		this.inv.render();
 		this.btn1.render();
 		this.btn2.render();
@@ -118,7 +123,6 @@ function Menu() {
 		this.btnE.render();
 		
 		
-		this.stt.render();
 		
 		context.fillStyle = "rgba(0,0,0,"+ percBattle +")";
 	    context.fillRect(0, 0, width, height);
@@ -141,6 +145,8 @@ function Menu() {
 			{
 				setCookie("room", "1", 5);
 				curMenu = 0;
+				enemyPresent = false;
+				this.btnE.x = -800;
 			}
 		}
 		else
@@ -185,6 +191,9 @@ function MenuButton(num, toNum, name, description, x, y, w, h, c1, c2) {
 	this.x = btnOffX;
 		this.toX = x;
 		this.exX = 0;
+		
+	if(toNum == 3)
+		this.x = -800;
 	
 	this.y = y;
 	this.w = w;
@@ -243,6 +252,12 @@ function MenuButton(num, toNum, name, description, x, y, w, h, c1, c2) {
 	MenuButton.prototype.update = function() {
 		if(curMenu == this.num)
 		{
+			if(this == menu.btnE)
+				if(!enemyPresent)
+				{
+					this.x += (-500 - this.x)/20;
+					return;
+				}
 			this.x += (this.toX - this.x)/20;
 			
 			if(curMenuButton == this)
@@ -290,6 +305,10 @@ function MenuButton(num, toNum, name, description, x, y, w, h, c1, c2) {
 		}
 		else
 		{
+			if(this == menu.btnE)
+				if(!enemyPresent)
+					return;
+				
 			this.x += (btnOffX - this.x)/20;
 			this.exX += (0 - this.exX)/10;
 			
@@ -312,21 +331,28 @@ function MenuButton(num, toNum, name, description, x, y, w, h, c1, c2) {
 	
 function Stats() {
 	alph = 0;
+	
+	this.map = new Sprite("Img/map.PNG",500, 200);
 };
 	Stats.prototype.render = function() {
+		context.globalAlpha = alph;
+			this.map.render();
+		context.globalAlpha = 1;
+
+		
 		dY = 200;
 		
 		context.fillStyle = "rgba(255,255,255, " + alph + ")";
 	   	context.font = "50px Tahoma";
 	   	context.fillText("Health: " + curHP + "/" + curMaxHP, 100, dY);
-	   	context.fillText("Attack: " + curArmor[0]+curWeapon[0]+curHat[0], 100, dY+50);
-	   	context.fillText("Defense: " + curArmor[1]+curWeapon[1]+curHat[1], 100, dY+100);
+	   	context.fillText("Attack: " + (curArmor[0]+curWeapon[0]+curHat[0]), 100, dY+50);
+	   	context.fillText("Defense: " + (curArmor[1]+curWeapon[1]+curHat[1]), 100, dY+100);
 
-		context.fillStyle = "rgba(" + tgC[0] + "," + tgC[1] + "," + tgC[2] + ", " + alph + ")";
-	   	context.fillRect(600, dY-45, 200, 50);
+		//context.fillStyle = "rgba(" + tgC[0] + "," + tgC[1] + "," + tgC[2] + ", " + alph + ")";
+	   	//context.fillRect(600, dY-45, 200, 50);
 	   	
-		context.fillStyle = "rgba(255,255,255, " + alph + ")";
-	   	context.fillRect(600, dY-45, 200*(this.userHP/this.userMaxHP), 50);
+		//context.fillStyle = "rgba(255,255,255, " + alph + ")";
+	   	//context.fillRect(600, dY-45, 200*(curHP/curMaxHP), 50);
 	};
 	Stats.prototype.update = function() {
 		if(curMenu == 2)
@@ -343,6 +369,8 @@ function Stats() {
 	
 var ownedItems = [];
 function Inventory() {
+	this.alph = 0;
+	
 	this.updateInventory();
 	
 	this.selInd = -1;
@@ -489,9 +517,21 @@ function Inventory() {
 			this.times -= 1;
 		}
 		
-		if(curMenu != 1)
+		if(curMenu == 1)
+			this.alph += (1 - this.alph)/12;
+		else
+		{
+			this.alph += (0 - this.alph)/12;
+			
+			if(this.alph < .01)
+				this.alph = 0;
+		}
+		
+		if(this.alph == 0)
 			return;
 		
+		context.globalAlpha = this.alph;
+
 		context.fillStyle = this.sGrd;//"#FFFFFF";
 		
 		hei = 70;		
@@ -523,25 +563,25 @@ function Inventory() {
 			if(this.selInd != i)
 			{
 				if(this.hatInd == i)
-				{
-					context.fillText("EQUIPPED", 600,500);
 					context.fillStyle = this.haGrd;
-				}
 				else if(this.weaponInd == i)
-				{
-					context.fillText("EQUIPPED", 600,500);
 					context.fillStyle = this.weGrd;	
-				}
 				else if(this.armorInd == i)
-				{
-					context.fillText("EQUIPPED", 600,500);
 					context.fillStyle = this.swGrd;	
-				}
 				else
 					context.fillStyle = this.sGrd;	
 			}
 			else
+			{
+				if(this.armorInd == i || this.hatInd == i || this.weaponInd == i)
+				{
+					context.fillStyle = "#FFFFFF";
+					context.font = hei + "px Tahoma";
+					context.fillText("EQUIPPED", 600,500);
+				}
+				
 				context.fillStyle = "#FFFFFF";
+			}
 			context.font = hei + "px Tahoma";
 
 			context.fillText(name, lX+60, 100 + i*hei - this.strtY);
@@ -624,6 +664,8 @@ function Inventory() {
 		
 		mouseYP = mouseY;
 		mouseDP = mouseDown;
+		
+		context.globalAlpha = 1;
 	};
 
 

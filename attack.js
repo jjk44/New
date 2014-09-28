@@ -26,8 +26,8 @@ function calcDamage(monster, attacker) {
 	
 	var DMG = k1*ATK+k2*Math.random()*ATK - (d1*DEF+d2*Math.random()*DEF);
 		
-	if(DMG < 0)
-		DMG = 0;
+	if(DMG < 1)
+		DMG = 1;
 		
 	return Math.ceil(DMG);
 }

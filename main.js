@@ -4,6 +4,12 @@ var curHat = [0, 0];
 var curArmor = [0, 0];
 var curWeapon = [0, 0];
 
+var curExp = 0;
+
+enemyPresent = false;
+
+watchPos();
+
 
 var animate = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function (callback) {
         window.setTimeout(callback, 1000 / 60);
